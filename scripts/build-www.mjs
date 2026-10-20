@@ -26,6 +26,10 @@ const head = `<!doctype html>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#6b3fa0">
 <link rel="icon" href="icon.png">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FRENZO">
 <script src="vendor/supabase.js"></script>
 <script src="js/config.js"></script>
 <script src="js/adapter.js"></script>
@@ -38,6 +42,7 @@ const out = head + headPart + rest.slice(0, bodyStart) + `
 </head>
 <body>` + rest.slice(bodyStart) + `
 <script src="js/login.js"></script>
+<script>if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
 </body>
 </html>
 `;

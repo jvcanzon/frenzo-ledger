@@ -50,6 +50,11 @@ In the `frenzo-ledger` repository: **Settings → Secrets and variables → Acti
 ### 5. Your account
 The **first** account created in the app becomes the **owner** (full access). Everyone who signs up after that is **crew** (Event day screen only). So: install the app (step 6 or 7) and create your account first, before the crew. To change someone's role later: Supabase → Table Editor → `profiles` → edit `role`.
 
+### 5b. No app store? Two ways to install without submitting anything
+- **Android phone:** the test APK from step 6 installs directly from the GitHub Actions page. No Play Console account, no fee, no review. Share the same APK file with crew on Android.
+- **Any phone, including iPhone:** publish the app as a website (free, on GitHub Pages: repository Settings → Pages → Source "GitHub Actions"; the "Web app" workflow does the rest) and **Add to Home Screen** from Safari or Chrome. It gets the FRENZO icon, opens full-screen, works offline for the app itself, and gets updates automatically. No Apple or Google account needed. This is the recommended route for iPhone if you don't want the App Store.
+- An iPhone app that is installed *as an app* without the public store still needs the Apple Developer account (US$99/year) and TestFlight — step 7 minus the final "submit for review".
+
 ### 6. Android
 - **Try it on your phone now:** Actions → **Android build** → the latest run → download `frenzo-ledger-debug.apk`, open it on an Android phone (allow "install from unknown sources"). This is for your own testing; it isn't the store version.
 - **Play Store:** in Play Console create the app "FRENZO Ledger" (app, not game; free). Google asks for a signing key: create one with Android Studio or ask Claude for the one-line command, then add these secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. The next Android build also produces `frenzo-ledger-release.aab`; upload it in Play Console → Testing → Internal testing first, then Production. Google's review usually takes 1–3 days the first time.
