@@ -1,8 +1,8 @@
 # FRENZO Ledger — the app
 
-A **live view** of the FRENZO Stock Ledger on your phone: stock, reservations, events, expenses, income, supplier orders and documents, with sign-in. **All editing stays in the ledger** (the Claude artifact); a scheduled task copies every change into the app's database within the hour. The app shows the data, downloads the PDFs, and never writes.
+A **live view** of the FRENZO Stock Ledger on your phone: stock, reservations, events, expenses, income, supplier orders and documents, with sign-in. **All editing stays in the ledger** (the Claude artifact); a sync you start (tell Claude "sync") copies the changes into the app within a few minutes. The app shows the data, downloads the PDFs, and never writes.
 
-How the data flows: `FRENZO Stock Ledger (master)` → hourly Claude task → `data/inbox/*.json` in this repo → "Apply data changes" workflow → app database → every phone, live.
+How the data flows: `FRENZO Stock Ledger (master)` → Claude sync task (on request) → `data/inbox/*.json` in this repo → "Apply data changes" workflow → app database → every phone, live.
 
 **How it's put together**
 

@@ -90,7 +90,9 @@
   const addBanner = () => {
     if (!window.claude.readOnly || $("fz-ro")) return;
     const b = document.createElement("div"); b.id = "fz-ro";
-    b.innerHTML = `<b>Live view</b> · updated from the FRENZO Stock Ledger every hour. To add or change anything, use the ledger.`;
+    b.innerHTML = `<b>Live view</b> · <span id="fz-asof">loading…</span> · To add or change anything, use the FRENZO Stock Ledger, then ask Claude to sync.`;
+    window.claude.use("db").then(db => db.doc("station/appSync").onSnapshot(sn => { const d = sn.exists ? sn.data() : null, el = $("fz-asof"); if (!el) return;
+      el.textContent = d && d.syncedAt ? "Data as of " + new Date(d.syncedAt).toLocaleString("en-PH", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "not synced yet"; }, () => { })).catch(() => { });
     const st = $("status"); (st ? st.closest("header") || st.parentElement : document.body).insertAdjacentElement("afterend", b);
     const sb2 = document.createElement("style"); sb2.textContent = `#fz-ro{margin:0 0 14px;padding:9px 12px;border-radius:10px;background:var(--accent-soft,#e3e7fb);color:var(--ink,#171a2b);font-size:13px;line-height:1.4}`; document.head.appendChild(sb2);
     // the status line: say "Live view" instead of "Live · synced"

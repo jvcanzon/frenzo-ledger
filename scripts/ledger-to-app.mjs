@@ -19,10 +19,12 @@ for (const c of COLLECTIONS) {
     if (!inApp.has(id) || canon(inApp.get(id)) !== canon(data)) { ops.push({ op: "set", collection: c, id, data }); summary[c] = (summary[c] || 0) + 1; }
   }
   if (!fs.existsSync(dir)) continue; // collection not exported this run: leave the app's copy alone
-  for (const id of inApp.keys()) if (!seen.has(id)) { ops.push({ op: "delete", collection: c, id }); summary[c + " deleted"] = (summary[c + " deleted"] || 0) + 1; }
+  for (const id of inApp.keys()) if (!seen.has(id) && !(c === "station" && id === "appSync")) { ops.push({ op: "delete", collection: c, id }); summary[c + " deleted"] = (summary[c + " deleted"] || 0) + 1; }
 }
-if (!ops.length) { console.log("NO_CHANGES"); process.exit(0); }
+const changed = ops.length;
+// stamp shown in the app's banner ("Data as of …"), written on every sync so the owner can see it ran
+ops.push({ op: "set", collection: "station", id: "appSync", data: { syncedAt: Date.now(), changed, summary } });
 fs.mkdirSync("data/inbox", { recursive: true });
 const file = path.join("data/inbox", new Date().toISOString().replace(/[:.]/g, "-") + "-ledger-sync.json");
 fs.writeFileSync(file, JSON.stringify({ source: "FRENZO Stock Ledger (artifact)", ops }, null, 0));
-console.log("WROTE " + file + " — " + Object.entries(summary).map(([k, v]) => `${k} ${v}`).join(", "));
+console.log("WROTE " + file + " — " + (changed ? Object.entries(summary).map(([k, v]) => `${k} ${v}`).join(", ") : "no data changes, stamp only"));
