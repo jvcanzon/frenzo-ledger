@@ -2,6 +2,7 @@ name: Import old ledger data (one time)
 # Run this once after the database schema is in place: Actions → this workflow → Run workflow.
 on:
   workflow_dispatch:
+permissions: { contents: write }
 jobs:
   import:
     runs-on: ubuntu-latest
@@ -13,3 +14,8 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Save the result to the repository (so Claude can read it)
+        if: always()
+        run: |
+          git config user.name "frenzo-bot" && git config user.email "bot@frenzo.local"
+          git add data/last-run.md && (git diff --cached --quiet || git commit -m "import: result" && git push)
