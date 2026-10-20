@@ -4,7 +4,8 @@
    The ledger code itself is unchanged. */
 (function () {
   "use strict";
-  const cfg = window.FRENZO_CONFIG || {};
+  const cfg = { ...(window.FRENZO_CONFIG || {}) };
+  if (cfg.supabaseUrl) cfg.supabaseUrl = String(cfg.supabaseUrl).trim().replace(/\/+$/, "").replace(/\/(rest|auth|storage|functions)\/v1$/, "");
   const sb = window.supabase && cfg.supabaseUrl && cfg.supabaseAnonKey
     ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } })
     : null;

@@ -12,7 +12,7 @@ export function report(lines) { // visible in the Actions summary and in data/la
   fs.mkdirSync("data", { recursive: true }); fs.writeFileSync("data/last-run.md", `_${new Date().toISOString()}_\n\n${txt}\n`);
 }
 export function rest() {
-  const url = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, ""), key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
+  const url = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "").replace(/\/(rest|auth|storage|functions)\/v1$/, ""), key = (process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim();
   const missing = [!url && "SUPABASE_URL", !key && "SUPABASE_SERVICE_ROLE_KEY"].filter(Boolean);
   if (missing.length) { report([`❌ Missing GitHub secret(s): ${missing.join(", ")} (repository Settings → Secrets and variables → Actions)`]); process.exit(1); }
   if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url)) { report([`❌ SUPABASE_URL looks wrong: "${url.replace(/[a-z0-9]{6,}/g, m => m.slice(0, 3) + "…")}". It should be https://<project-ref>.supabase.co`]); process.exit(1); }

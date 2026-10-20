@@ -3,7 +3,7 @@
 //   {"op":"update","collection":"events","id":"ev-1","data":{"downPayment":5000}}, {"op":"delete","collection":"movements","id":"x"} ] }
 // This is how Claude keeps adding bookings and fixing data for you: it commits a file here, GitHub applies it.
 import fs from "node:fs"; import path from "node:path";
-const url = process.env.SUPABASE_URL, key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const url = (process.env.SUPABASE_URL || "").trim().replace(/\/+$/, "").replace(/\/(rest|auth|storage|functions)\/v1$/, ""), key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const h = { apikey: key, Authorization: "Bearer " + key, "Content-Type": "application/json" };
 const deepMerge = (a, b) => { const out = a && typeof a === "object" && !Array.isArray(a) ? { ...a } : {}; for (const [k, v] of Object.entries(b || {})) { if (v && typeof v === "object" && !Array.isArray(v) && v.__delete__ === true) delete out[k]; else if (v && typeof v === "object" && !Array.isArray(v) && out[k] && typeof out[k] === "object" && !Array.isArray(out[k])) out[k] = deepMerge(out[k], v); else out[k] = v; } return out; };
 const files = fs.existsSync("data/inbox") ? fs.readdirSync("data/inbox").filter(f => f.endsWith(".json")).sort() : [];
