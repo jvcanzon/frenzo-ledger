@@ -1,0 +1,12 @@
+{
+  "appId": "ph.frenzo.ledger",
+  "appName": "FRENZO Ledger",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "ios": { "contentInset": "always", "backgroundColor": "#f3f4f7" },
+  "android": { "backgroundColor": "#f3f4f7", "allowMixedContent": false },
+  "plugins": {
+    "SplashScreen": { "launchShowDuration": 800, "backgroundColor": "#3247c9", "showSpinner": false },
+    "StatusBar": { "style": "LIGHT", "backgroundColor": "#3247c9" }
+  }
+}

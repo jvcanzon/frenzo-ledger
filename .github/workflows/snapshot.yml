@@ -1,0 +1,23 @@
+name: Data snapshot (hourly)
+# Writes data/snapshot.json from the live database so the scheduled Claude tasks can read it.
+on:
+  schedule: [{ cron: "7 * * * *" }]
+  workflow_dispatch:
+permissions: { contents: write }
+concurrency: snapshot
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node scripts/snapshot.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Commit if changed
+        run: |
+          git config user.name "frenzo-bot" && git config user.email "bot@frenzo.local"
+          git add data/snapshot.json
+          git diff --cached --quiet || git commit -m "data: snapshot $(date -u +%FT%TZ)" && git push

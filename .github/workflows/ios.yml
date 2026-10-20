@@ -1,0 +1,54 @@
+name: iOS build → TestFlight
+# Needs an App Store Connect API key (Users and Access → Integrations → App Store Connect API,
+# role Admin) saved as secrets: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8_BASE64, and APPLE_TEAM_ID.
+# Xcode then manages the signing certificate and profile itself (cloud signing).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    tags: ["v*"]
+jobs:
+  ios:
+    runs-on: macos-14
+    if: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/v') }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: npm }
+      - run: npm ci
+      - name: Write app config
+        run: |
+          cat > www/js/config.js <<CFG
+          window.FRENZO_CONFIG = { supabaseUrl: "${{ secrets.SUPABASE_URL }}", supabaseAnonKey: "${{ secrets.SUPABASE_ANON_KEY }}", aiParsing: ${{ vars.AI_PARSING || 'false' }} };
+          CFG
+      - run: npm run build && npx cap sync ios
+      - name: App Store Connect API key
+        run: |
+          mkdir -p ~/private_keys
+          echo "${{ secrets.ASC_KEY_P8_BASE64 }}" | base64 -d > ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8
+      - name: Archive
+        working-directory: ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -destination "generic/platform=iOS" \
+            -archivePath $PWD/build/App.xcarchive archive \
+            -allowProvisioningUpdates -allowProvisioningDeviceRegistration \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }} \
+            CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} CURRENT_PROJECT_VERSION=${{ github.run_number }}
+      - name: Upload to TestFlight
+        working-directory: ios/App
+        run: |
+          cat > ExportOptions.plist <<EOP
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>teamID</key><string>${{ secrets.APPLE_TEAM_ID }}</string>
+          </dict></plist>
+          EOP
+          xcodebuild -exportArchive -archivePath $PWD/build/App.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath $PWD/build/out \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_${{ secrets.ASC_KEY_ID }}.p8 \
+            -authenticationKeyID ${{ secrets.ASC_KEY_ID }} -authenticationKeyIssuerID ${{ secrets.ASC_ISSUER_ID }}

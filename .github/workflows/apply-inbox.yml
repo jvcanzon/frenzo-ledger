@@ -1,0 +1,32 @@
+name: Apply data changes from inbox
+# Runs whenever a change file lands in data/inbox/ (e.g. Claude adding a booking for you).
+on:
+  push:
+    paths: ["data/inbox/**"]
+  workflow_dispatch:
+permissions: { contents: write }
+concurrency: inbox
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: node scripts/apply-inbox.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - name: Record as applied
+        run: |
+          git config user.name "frenzo-bot" && git config user.email "bot@frenzo.local"
+          git add -A data/
+          git diff --cached --quiet || git commit -m "data: applied inbox changes" && git push
+      - name: Refresh snapshot
+        run: |
+          node scripts/snapshot.mjs
+          git add data/snapshot.json
+          git diff --cached --quiet || git commit -m "data: snapshot after inbox" && git push
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

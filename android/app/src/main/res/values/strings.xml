@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FRENZO Ledger</string>
+    <string name="title_activity_main">FRENZO Ledger</string>
+    <string name="package_name">ph.frenzo.ledger</string>
+    <string name="custom_url_scheme">ph.frenzo.ledger</string>
+</resources>
