@@ -2,8 +2,12 @@ name: Android build
 # Every push builds a debug APK you can install directly (Actions → run → Artifacts).
 # When the Play signing secrets exist, it also builds the release .aab for the Play Console.
 on:
-  push: { branches: [main] }
+  push:
+    branches: [main]
+    paths-ignore: ["data/**", "builds/**"]
   workflow_dispatch:
+permissions: { contents: write }
+concurrency: android
 jobs:
   android:
     runs-on: ubuntu-latest
@@ -27,6 +31,13 @@ jobs:
         run: chmod +x gradlew && ./gradlew assembleDebug --no-daemon
       - uses: actions/upload-artifact@v4
         with: { name: frenzo-ledger-debug.apk, path: android/app/build/outputs/apk/debug/app-debug.apk }
+      - name: Keep the latest APK in the repository (easy phone download)
+        run: |
+          mkdir -p builds && cp android/app/build/outputs/apk/debug/app-debug.apk builds/frenzo-ledger.apk
+          git config user.name "frenzo-bot" && git config user.email "bot@frenzo.local"
+          git pull --rebase -q origin main || true
+          git add builds/frenzo-ledger.apk
+          git diff --cached --quiet || git commit -m "build: Android APK $(date -u +%F)" && git push
       - name: Release AAB (signed)
         if: env.HAS_KEYSTORE == 'true'
         working-directory: android
