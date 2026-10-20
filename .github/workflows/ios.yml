@@ -19,7 +19,7 @@ jobs:
       - name: Write app config
         run: |
           cat > www/js/config.js <<CFG
-          window.FRENZO_CONFIG = { supabaseUrl: "${{ secrets.SUPABASE_URL }}", supabaseAnonKey: "${{ secrets.SUPABASE_ANON_KEY }}", aiParsing: ${{ vars.AI_PARSING || 'false' }} };
+          window.FRENZO_CONFIG = { supabaseUrl: "${{ secrets.SUPABASE_URL }}", supabaseAnonKey: "${{ secrets.SUPABASE_ANON_KEY }}", aiParsing: ${{ vars.AI_PARSING || 'false' }}, readOnly: ${{ vars.APP_READ_ONLY || 'true' }} };
           CFG
       - run: npm run build && npx cap sync ios
       - name: App Store Connect API key

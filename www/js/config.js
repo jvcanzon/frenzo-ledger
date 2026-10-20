@@ -4,6 +4,8 @@
 window.FRENZO_CONFIG = {
   supabaseUrl: "https://YOUR-PROJECT-REF.supabase.co",
   supabaseAnonKey: "YOUR-ANON-KEY",
-  // Set to false to hide the "paste an order" AI helper until the parse-order function is deployed.
-  aiParsing: true
+  // The app is a live view of the FRENZO Stock Ledger: all editing happens in the ledger.
+  readOnly: true,
+  // Set to true only if the parse-order function is deployed (and readOnly is false).
+  aiParsing: false
 };

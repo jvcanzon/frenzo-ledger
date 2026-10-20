@@ -4,7 +4,7 @@
    The ledger code itself is unchanged. */
 (function () {
   "use strict";
-  const cfg = { ...(window.FRENZO_CONFIG || {}) };
+  const cfg = { ...(window.FRENZO_CONFIG || {}), ...(window.FRENZO_CONFIG_OVERRIDE || {}) }; // override is for tests
   if (cfg.supabaseUrl) cfg.supabaseUrl = String(cfg.supabaseUrl).trim().replace(/\/+$/, "").replace(/\/(rest|auth|storage|functions)\/v1$/, "");
   const sb = window.supabase && cfg.supabaseUrl && cfg.supabaseAnonKey
     ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, { auth: { persistSession: true, autoRefreshToken: true } })
@@ -75,21 +75,26 @@
     return () => { live = false; C.listeners.delete(fire); if (onError) C.errListeners = C.errListeners.filter(x => x !== onError); };
   }
 
+  // ---------- read-only (live view) ----------
+  const RO = cfg.readOnly !== false; // the app mirrors the FRENZO Stock Ledger; edits happen there
+  const roError = () => { const e = new Error("This app is a live view. Make changes in the FRENZO Stock Ledger — they show up here within the hour."); e.code = "read_only"; return e; };
+  const guard = fn => RO ? async () => { throw roError(); } : fn;
+
   // ---------- db API (what the ledger calls) ----------
   const docRef = (name, id) => {
     const C = coll(name);
     return {
       id,
       get: async () => { const { data, error } = await sb.from(TABLE).select("data").eq("collection", name).eq("id", id).maybeSingle(); if (error) throw err(error); return { id, exists: !!data, data: () => data ? clone(data.data) : undefined }; },
-      set: async d => { const { error } = await sb.from(TABLE).upsert({ collection: name, id, data: d }, { onConflict: "collection,id" }); if (error) throw err(error); C.setLocal(id, clone(d)); },
-      update: async patch => { const { data, error } = await sb.rpc("merge_doc", { p_collection: name, p_id: id, p_patch: patch }); if (error) throw err(error); C.setLocal(id, data || deepMerge(C.rows && C.rows.get(id), patch)); },
-      delete: async () => { const { error } = await sb.from(TABLE).delete().eq("collection", name).eq("id", id); if (error) throw err(error); C.delLocal(id); },
+      set: guard(async d => { const { error } = await sb.from(TABLE).upsert({ collection: name, id, data: d }, { onConflict: "collection,id" }); if (error) throw err(error); C.setLocal(id, clone(d)); }),
+      update: guard(async patch => { const { data, error } = await sb.rpc("merge_doc", { p_collection: name, p_id: id, p_patch: patch }); if (error) throw err(error); C.setLocal(id, data || deepMerge(C.rows && C.rows.get(id), patch)); }),
+      delete: guard(async () => { const { error } = await sb.from(TABLE).delete().eq("collection", name).eq("id", id); if (error) throw err(error); C.delLocal(id); }),
       onSnapshot: (onNext, onError) => watch(C, sn => { const d = C.rows.get(id); onNext({ id, exists: d !== undefined, data: () => clone(d) }); }, onError)
     };
   };
   const collRef = (name, filters = []) => ({
     doc: id => docRef(name, id),
-    add: async d => { const id = rid(); await docRef(name, id).set(d); return { id }; },
+    add: guard(async d => { const id = rid(); await docRef(name, id).set(d); return { id }; }),
     where: (field, op, value) => { if (op !== "==") throw new Error("Only == filters are supported"); return collRef(name, [...filters, [field, value]]); },
     get: async () => { const C = coll(name); await C.load(); return snapshotOf(C, filt(filters)); },
     onSnapshot: (onNext, onError) => watch(coll(name), onNext, onError, filt(filters))
@@ -162,6 +167,7 @@
   }
 
   window.claude = {
+    readOnly: RO,
     use: async name => {
       if (!sb) return null;
       if (name === "db") { await waitForSession(); return db; }

@@ -1,6 +1,8 @@
 # FRENZO Ledger — the app
 
-The FRENZO stock ledger as an iPhone and Android app: stock, reservations, events, event day for the crew, expenses, income, supplier orders, documents. Same screens as the ledger you use today, now with its own database and sign-in.
+A **live view** of the FRENZO Stock Ledger on your phone: stock, reservations, events, expenses, income, supplier orders and documents, with sign-in. **All editing stays in the ledger** (the Claude artifact); a scheduled task copies every change into the app's database within the hour. The app shows the data, downloads the PDFs, and never writes.
+
+How the data flows: `FRENZO Stock Ledger (master)` → hourly Claude task → `data/inbox/*.json` in this repo → "Apply data changes" workflow → app database → every phone, live.
 
 **How it's put together**
 
@@ -73,6 +75,11 @@ Crew install the same app (TestFlight / Play internal testing, or the public sto
 This feature reads a customer's message or screenshot and fills the reservation form. It needs an Anthropic API key (console.anthropic.com, pay per use — a few centavos per order). Deploy `supabase/functions/parse-order` (Supabase → Edge Functions → deploy via CLI or the dashboard editor), set the secret `ANTHROPIC_API_KEY` under Edge Functions → Secrets, and set the GitHub **variable** `AI_PARSING` to `true`. Until then the helper is hidden in the app.
 
 ---
+
+## Live-view mode
+- `www/js/config.js` → `readOnly: true` (the default; the builds set it from the `APP_READ_ONLY` variable). Every write in the app is refused with "This app is a live view…".
+- Run `supabase/migrations/0002_live_view.sql` once in the SQL Editor so the database refuses writes too.
+- The sync task runs `scripts/ledger-to-app.mjs <export-dir>` on the ledger's export and commits the result to `data/inbox/`.
 
 ## After it's live
 

@@ -13,13 +13,14 @@ const seed = JSON.parse(fs.readFileSync(path.join(root, "seed/snapshot.json"), "
 const wait = ms => new Promise(r => setTimeout(r, ms));
 let failures = 0; const ok = (cond, what) => { console.log((cond ? "  ✓ " : "  ✗ ") + what); if (!cond) failures++; };
 
-function boot(users, { noSession = true } = {}) {
+function boot(users, { readOnly = false } = {}) {
   const { createClient, client } = makeFake({ docs: seed, users });
   const errors = [];
   const dom = new JSDOM(html, {
     runScripts: "dangerously", resources: undefined, url: "https://app.local/",
     beforeParse(w) {
       w.supabase = { createClient }; w.Element.prototype.scrollIntoView = function () { };
+      w.FRENZO_CONFIG_OVERRIDE = { readOnly };
       w.URL.createObjectURL = () => "blob:x"; w.URL.revokeObjectURL = () => { }; w.HTMLAnchorElement.prototype.click = function () { w.__downloaded = this.download; };
       w.jspdf = require("jspdf"); w.XLSX = require("xlsx"); w.JSZip = require("jszip");
       w.confirm = () => true; w.alert = () => { }; w.prompt = () => "";
@@ -117,5 +118,18 @@ console.log("3. Sign-up: first account becomes owner, later ones crew");
   ok(T(d, "#status") === "Live · synced", "owner ledger loads after sign-up");
 }
 
+console.log("4. Live view (read-only) mode");
+{
+  const { d, w, errors } = boot(users, { readOnly: true });
+  await wait(300);
+  d.getElementById("fz-email").value = "joana@example.com"; d.getElementById("fz-pass").value = "secret123";
+  d.getElementById("fz-form").dispatchEvent(new w.Event("submit", { cancelable: true })); await wait(800);
+  ok(w.claude.readOnly === true, "app runs in live-view mode by default");
+  ok(!!d.getElementById("fz-ro") && /Live view/.test(T(d, "#fz-ro")), "live-view banner shown");
+  ok(T(d, "#status") === "Live view · synced", "status reads Live view · synced");
+  const db = await w.claude.use("db"); let code = null; try { await db.doc("events/ev-ryker-20261212").update({ name: "x" }); } catch (e) { code = e.code; }
+  ok(code === "read_only", "writes are rejected with a friendly message");
+  ok(errors.length === 0, "no page errors");
+}
 console.log(failures ? `\n${failures} check(s) failed` : "\nAll checks passed");
 process.exit(failures ? 1 : 0);

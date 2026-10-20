@@ -86,6 +86,19 @@
     const { error } = await auth.updateUser({ password: p }); alert(error ? error.message : "Password updated.");
   });
 
+  // Live-view banner: the app shows the ledger, edits are made in the ledger.
+  const addBanner = () => {
+    if (!window.claude.readOnly || $("fz-ro")) return;
+    const b = document.createElement("div"); b.id = "fz-ro";
+    b.innerHTML = `<b>Live view</b> · updated from the FRENZO Stock Ledger every hour. To add or change anything, use the ledger.`;
+    const st = $("status"); (st ? st.closest("header") || st.parentElement : document.body).insertAdjacentElement("afterend", b);
+    const sb2 = document.createElement("style"); sb2.textContent = `#fz-ro{margin:0 0 14px;padding:9px 12px;border-radius:10px;background:var(--accent-soft,#e3e7fb);color:var(--ink,#171a2b);font-size:13px;line-height:1.4}`; document.head.appendChild(sb2);
+    // the status line: say "Live view" instead of "Live · synced"
+    const fix = () => { if (st && /Live · synced/.test(st.textContent)) st.textContent = "Live view · synced"; }; fix(); new MutationObserver(fix).observe(st, { childList: true, characterData: true, subtree: true });
+  };
+  auth.onAuthStateChange((_e, s) => { if (s) addBanner(); });
+  auth.getSession().then(({ data }) => { if (data.session) addBanner(); });
+
   // Sign-out link beside the sync status.
   const addSignOut = () => {
     const st = $("status"); if (!st || $("fz-signout")) return;
